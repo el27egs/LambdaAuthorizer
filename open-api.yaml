@@ -1,0 +1,59 @@
+---
+swagger: "2.0"
+info:
+  version: "1.0"
+  title: "lambda-authorizer-example"
+host: "mcib6g2pa4.execute-api.us-east-1.amazonaws.com"
+basePath: "/Prod"
+schemes:
+- "https"
+paths:
+  /users/{userName}:
+    get:
+      parameters:
+      - name: "userName"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "Authorization"
+        in: "header"
+        required: true
+        type: "string"
+      responses: {}
+      security:
+      - PhotoAppUsersLambdaAuhtorizer: []
+      x-amazon-apigateway-request-validator: "Validate query string parameters and\
+        \ headers"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri:
+          Fn::Sub:
+            - "arn:aws:apigateway:${AWSRegion}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations"
+            - AWSRegion:
+                Ref: AWS::Region
+              FunctionArn:
+                Fn::GetAtt: [ GetUserByUsernameHandlerFunction, Arn ]
+        passthroughBehavior: "when_no_match"
+        type: "aws_proxy"
+
+securityDefinitions:
+  PhotoAppUsersLambdaAuhtorizer:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+    x-amazon-apigateway-authorizer:
+      authorizerUri:
+        Fn::Sub:
+          - "arn:aws:apigateway:${AWSRegion}:lambda:path/2015-03-31/functions/${FunctionArn}/invocations"
+          - AWSRegion:
+              Ref: AWS::Region
+            FunctionArn:
+              Fn::GetAtt: [ LambdaAuthorizerFunction, Arn ]
+      authorizerResultTtlInSeconds: 0
+      type: "token"
+
+x-amazon-apigateway-request-validators:
+  Validate query string parameters and headers:
+    validateRequestParameters: true
+    validateRequestBody: false
